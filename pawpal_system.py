@@ -32,6 +32,7 @@ class Task:
     is_recurring: bool = False
     recurrence: str | None = None
     preferred_time: time | None = None
+    is_done: bool = False
 
     def mark_done(self) -> None:
         raise NotImplementedError
@@ -76,7 +77,7 @@ class Schedule:
     available_minutes: int
     entries: list[ScheduleEntry] = field(default_factory=list)
 
-    def generate_plan(self, tasks: list[Task]) -> list[ScheduleEntry]:
+    def generate_plan(self) -> list[ScheduleEntry]:
         raise NotImplementedError
 
     def total_scheduled_minutes(self) -> int:
