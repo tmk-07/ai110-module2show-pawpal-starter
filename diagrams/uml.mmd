@@ -1,15 +1,72 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
+    %% PawPal+ domain model
 
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class Owner {
+        +str name
+        +list~Pet~ pets
+        +add_pet(pet: Pet) None
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +str name
+        +str species
+        +str breed
+        +int age
+        +list~Task~ tasks
+        +add_task(task: Task) None
+        +remove_task(task_id: str) None
     }
 
-    ClassName --> AnotherClass : relationship
+    class Task {
+        +str task_id
+        +str name
+        +TaskCategory category
+        +int duration_minutes
+        +Priority priority
+        +bool is_recurring
+        +str recurrence
+        +time preferred_time
+        +mark_done() None
+    }
+
+    class TaskCategory {
+        <<enumeration>>
+        WALK
+        FEEDING
+        MEDICATION
+        GROOMING
+        ENRICHMENT
+        OTHER
+    }
+
+    class Priority {
+        <<enumeration>>
+        HIGH
+        MEDIUM
+        LOW
+    }
+
+    class Schedule {
+        +Pet pet
+        +date schedule_date
+        +int available_minutes
+        +list~ScheduleEntry~ entries
+        +generate_plan(tasks: list~Task~) list~ScheduleEntry~
+        +total_scheduled_minutes() int
+        +explain_plan() str
+    }
+
+    class ScheduleEntry {
+        +Task task
+        +time start_time
+        +time end_time
+        +str reason
+    }
+
+    Owner "1" --> "many" Pet : owns
+    Pet "1" --> "many" Task : has
+    Pet "1" --> "many" Schedule : scheduled for
+    Schedule "1" --> "many" ScheduleEntry : produces
+    ScheduleEntry "1" --> "1" Task : wraps
+    Task --> TaskCategory : categorized as
+    Task --> Priority : ranked by

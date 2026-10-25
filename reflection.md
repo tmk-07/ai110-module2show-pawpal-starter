@@ -3,6 +3,9 @@
 ## 1. System Design
 
 **a. Initial design**
+1. add different types of tasks
+2. be able to schedule tasks on a daily/weekly basis
+3. display task schedules
 
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
