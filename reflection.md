@@ -10,12 +10,14 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+task, pet, owner, and schedule were the classes. each respectively holds the info pertaining to it. for example, owner holds all data related to owner, and all the actions owners can take.
+
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
----
+--- yes - we made a minor change to Task, adding a variable for completion so we can modify the state of a given task. 
 
 ## 2. Scheduling Logic and Tradeoffs
 
