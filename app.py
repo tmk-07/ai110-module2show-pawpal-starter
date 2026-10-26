@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 
 import streamlit as st
 
@@ -89,6 +89,14 @@ with col2:
 with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
 
+col4, col5, col6 = st.columns(3)
+with col4:
+    has_preferred_time = st.checkbox("Set a preferred time", value=True)
+with col5:
+    preferred_time = st.time_input("Preferred time", value=time(9, 0), disabled=not has_preferred_time)
+with col6:
+    recurrence = st.selectbox("Recurrence", ["none", "daily", "weekly"])
+
 if st.button("Add task"):
     pet.add_task(
         Task(
@@ -97,17 +105,51 @@ if st.button("Add task"):
             category=TaskCategory.OTHER,
             duration_minutes=int(duration),
             priority=Priority[priority.upper()],
+            preferred_time=preferred_time if has_preferred_time else None,
+            is_recurring=recurrence != "none",
+            recurrence=None if recurrence == "none" else recurrence,
+            due_date=date.today() if recurrence != "none" else None,
         )
     )
 
+# Owner.detect_conflicts() is a lightweight, exact-time-match check across every
+# pet, so a pet owner sees it as soon as they create a scheduling clash, not
+# buried in the per-pet task table below.
+conflicts = owner.detect_conflicts()
+for warning in conflicts:
+    st.warning(f"⚠️ {warning}")
+
 if pet.tasks:
-    st.write("Current tasks:")
+    st.write("Current tasks (sorted by time via `Schedule.sort_by_time()`):")
+    sorted_tasks = Schedule.sort_by_time(pet.tasks)
     st.table(
         [
-            {"title": task.name, "duration_minutes": task.duration_minutes, "priority": task.priority.name.lower()}
-            for task in pet.tasks
+            {
+                "title": task.name,
+                "time": task.preferred_time.strftime("%H:%M") if task.preferred_time else "—",
+                "duration_minutes": task.duration_minutes,
+                "priority": task.priority.name.lower(),
+                "recurrence": task.recurrence or "none",
+                "status": "✅ done" if task.is_done else "⏳ pending",
+            }
+            for task in sorted_tasks
         ]
     )
+
+    pending_tasks = pet.filter_tasks(is_done=False)
+    if pending_tasks:
+        task_to_complete = st.selectbox(
+            "Mark a task complete", [task.name for task in pending_tasks], key="complete_task_select"
+        )
+        if st.button("Mark complete"):
+            task = next(t for t in pending_tasks if t.name == task_to_complete)
+            next_task = pet.complete_task(task.task_id)
+            if next_task is not None:
+                st.success(
+                    f"✅ {task.name} marked complete. Next occurrence added, due {next_task.due_date}."
+                )
+            else:
+                st.success(f"✅ {task.name} marked complete.")
 else:
     st.info("No tasks yet. Add one above.")
 
@@ -119,4 +161,5 @@ st.caption(f"This button calls Schedule.generate_plan() for {pet.name}.")
 if st.button("Generate schedule"):
     schedule = Schedule(pet=pet, schedule_date=date.today(), available_minutes=480)
     schedule.generate_plan(pet.tasks)
+    st.success(f"Schedule generated for {pet.name}.")
     st.text(schedule.explain_plan())

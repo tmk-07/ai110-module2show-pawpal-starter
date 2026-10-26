@@ -1,0 +1,88 @@
+classDiagram
+    %% PawPal+ domain model (final, matches pawpal_system.py)
+
+    class Owner {
+        +str name
+        +list~Pet~ pets
+        +add_pet(pet: Pet) None
+        +get_all_tasks() list~Task~
+        +get_tasks_by_pet(pet_name: str) list~Task~
+        +filter_tasks(is_done: bool) list~Task~
+        +detect_conflicts() list~str~
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +str breed
+        +int age
+        +list~Task~ tasks
+        +add_task(task: Task) None
+        +remove_task(task_id: str) None
+        +complete_task(task_id: str) Task
+        +filter_tasks(is_done: bool) list~Task~
+    }
+
+    class Task {
+        +str task_id
+        +str name
+        +TaskCategory category
+        +int duration_minutes
+        +Priority priority
+        +bool is_recurring
+        +str recurrence
+        +time preferred_time
+        +bool is_done
+        +date due_date
+        +mark_done() None
+        +create_next_occurrence() Task
+    }
+
+    class TaskCategory {
+        <<enumeration>>
+        WALK
+        FEEDING
+        MEDICATION
+        GROOMING
+        ENRICHMENT
+        OTHER
+    }
+
+    class Priority {
+        <<enumeration>>
+        HIGH
+        MEDIUM
+        LOW
+    }
+
+    class Schedule {
+        +Pet pet
+        +date schedule_date
+        +int available_minutes
+        +list~ScheduleEntry~ entries
+        +sort_by_time(tasks: list~Task~) list~Task~$
+        +generate_plan(tasks: list~Task~) list~ScheduleEntry~
+        +total_scheduled_minutes() int
+        +explain_plan() str
+    }
+
+    class ScheduleEntry {
+        +Task task
+        +time start_time
+        +time end_time
+        +str reason
+    }
+
+    Owner "1" --> "many" Pet : owns
+    Pet "1" --> "many" Task : has
+    Pet "1" --> "many" Schedule : scheduled for
+    Schedule "1" --> "many" ScheduleEntry : produces
+    ScheduleEntry "1" --> "1" Task : wraps
+    Task --> TaskCategory : categorized as
+    Task --> Priority : ranked by
+    Task ..> Task : create_next_occurrence() spawns
+    Owner ..> Schedule : reads tasks via Pet for conflict/filter checks
+
+    note for Task "create_next_occurrence() is called\nby Pet.complete_task() when a\nrecurring task is marked done;\ndue_date advances by 1 day (daily)\nor 7 days (weekly)."
+    note for Owner "detect_conflicts() groups all pets'\ntasks by exact preferred_time and\nreturns warning strings instead of\nraising, so the UI can display them."
+    note for Schedule "sort_by_time() is a static method:\nit does not read self.pet or\nself.entries, only the tasks passed in."
