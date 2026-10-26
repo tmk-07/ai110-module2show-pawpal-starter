@@ -22,6 +22,17 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Implementation Summary
+
+PawPal+ models pet care scheduling with four cooperating classes in `pawpal_system.py`:
+
+- **`Task`** holds a single care item (name, category, duration, priority, optional preferred time/recurrence) and tracks its own completion via `mark_done()`.
+- **`Pet`** owns a list of `Task` objects and exposes `add_task()`/`remove_task()` to manage them.
+- **`Owner`** owns a list of `Pet` objects and can `add_pet()` or roll up every task across all pets with `get_all_tasks()`.
+- **`Schedule`** takes a `Pet` and a list of tasks and turns them into a concrete daily plan: `generate_plan()` sorts pending tasks by priority (high → low) and then by preferred time, lays them out sequentially starting at a fixed day-start time, and skips any task that would exceed the available minutes budget. Each placed task becomes a `ScheduleEntry` (start/end time plus a plain-language reason it was placed there). `total_scheduled_minutes()` and `explain_plan()` summarize the result.
+
+`main.py` ties these together end-to-end: it creates an `Owner`, two `Pet`s, assigns three `Task`s with different preferred times, builds a `Schedule` per pet, and prints each pet's schedule for the current date. `app.py` wires the same classes into a Streamlit UI for interactive use.
+
 ## Getting started
 
 ### Setup
@@ -44,14 +55,10 @@ pip install -r requirements.txt
 
 ## 🖥️ Sample Output
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
-
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Schedule for Luna on 2026-10-24:
+- 18:00-18:20 Evening Grooming: Scheduled at its preferred time (Low priority).
+Total scheduled: 20/480 minutes.
 ```
 
 ## 🧪 Testing PawPal+
@@ -72,14 +79,12 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Schedule.sort_by_time()` | Sorts a list of `Task` objects by `preferred_time` (formatted as `"HH:MM"` for the sort key); untimed tasks sort last. Separate from `Schedule.generate_plan()`, which sorts by priority first and then by time while building the actual plan. |
+| Filtering | `Pet.filter_tasks()`, `Owner.filter_tasks()`, `Owner.get_tasks_by_pet()` | Filter tasks by completion status (`is_done=True`/`False`/`None`) at the pet level or across every pet an owner has, or pull all tasks for one named pet. |
+| Conflict handling | `Owner.detect_conflicts()` | Groups pending tasks across all of an owner's pets by exact `preferred_time` and returns a list of warning strings for any time with more than one task — same pet or different pets. Lightweight exact-match check, not full interval overlap (see `reflection.md`, section 2b). |
+| Recurring tasks | `Task.create_next_occurrence()`, `Pet.complete_task()` | `Pet.complete_task(task_id)` marks a task done and, if it's recurring (`recurrence="daily"` or `"weekly"`), automatically creates and adds the next occurrence with its `due_date` advanced by `timedelta(days=1)` or `timedelta(weeks=1)`. |
 
 ## 📸 Demo Walkthrough
 
